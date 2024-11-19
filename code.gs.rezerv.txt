@@ -1,0 +1,112 @@
+function doPost(e) {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '86400'
+  };
+
+  try {
+    // Получаем данные из параметра form data
+    const jsonString = e.parameter.data;
+    const data = JSON.parse(jsonString);
+    
+    Logger.log('Received data:', data);
+
+    // Получаем активную таблицу
+    const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = spreadsheet.getSheetByName('Responses');
+    
+    if (!sheet) {
+      sheet = spreadsheet.insertSheet('Responses');
+    }
+
+    // Создаем заголовки если их нет
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow([
+        'Дата',
+        'Компания',
+        'Отдел',
+        'Должность',
+        'Руководитель',
+        'Вопрос 1',
+        'Вопрос 2',
+        'Вопрос 3',
+        'Вопрос 4',
+        'Вопрос 5',
+        'Вопрос 6',
+        'Вопрос 7',
+        'Вопрос 8',
+        'Вопрос 9'
+      ]);
+      
+      // Форматируем заголовки
+      const headerRange = sheet.getRange(1, 1, 1, 14);
+      headerRange.setBackground('#4a4a4a')
+                 .setFontColor('#ffffff')
+                 .setFontWeight('bold')
+                 .setHorizontalAlignment('center')
+                 .setVerticalAlignment('middle')
+                 .setWrap(true);
+      
+      // Устанавливаем ширину столбцов
+      sheet.setColumnWidths(1, 14, 150);
+      sheet.setFrozenRows(1);
+    }
+
+    // Парсим ответы на вопросы
+    const answers = JSON.parse(data.surveyAnswers);
+    const userInfo = data.userInfo;
+
+    // Формируем строку данных
+    const rowData = [
+      new Date().toLocaleString('ru-RU'),
+      userInfo.company,
+      userInfo.department,
+      userInfo.position,
+      userInfo.manager,
+      answers.screen0_question0,
+      answers.screen0_question1,
+      answers.screen0_question2,
+      answers.screen1_question0,
+      answers.screen1_question1,
+      answers.screen1_question2,
+      answers.screen2_question0,
+      answers.screen2_question1,
+      answers.screen2_question2
+    ];
+
+    // Добавляем данные
+    sheet.appendRow(rowData);
+    const lastRow = sheet.getLastRow();
+    
+    // Форматируем ячейки
+    const dataRange = sheet.getRange(lastRow, 1, 1, 14);
+    dataRange.setHorizontalAlignment('center');
+    
+    // Добавляем чередующуюся подсветку строк
+    if (lastRow % 2 === 0) {
+      dataRange.setBackground('#f8f9fa');
+    }
+
+    // Добавляем границы
+    dataRange.setBorder(true, true, true, true, true, true);
+
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: true })
+    ).setMimeType(ContentService.MimeType.JSON)
+    .setHeaders(headers);
+
+  } catch (error) {
+    Logger.log('Error in doPost:', error.toString());
+    Logger.log('Error stack:', error.stack);
+    return ContentService.createTextOutput(
+      JSON.stringify({ success: false, error: error.toString() })
+    ).setMimeType(ContentService.MimeType.JSON)
+    .setHeaders(headers);
+  }
+}
+
+function doGet() {
+  return ContentService.createTextOutput('Script is running').setMimeType(ContentService.MimeType.TEXT);
+}
