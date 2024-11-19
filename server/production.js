@@ -1,19 +1,25 @@
 const express = require('express');
 const path = require('path');
 const cors = require('cors');
+const https = require('https');
 
 const app = express();
 
-// Разрешаем CORS
+// Middleware
 app.use(cors());
-
-// Парсим JSON
 app.use(express.json());
-
-// Раздаем статические файлы из папки build
 app.use(express.static(path.join(__dirname, '../build')));
 
-// Все остальные GET-запросы отправляем на index.html
+// Самопинг каждые 14 минут
+setInterval(() => {
+  https.get('https://opros2.onrender.com', (res) => {
+    console.log('Self-ping successful:', res.statusCode);
+  }).on('error', (err) => {
+    console.error('Self-ping failed:', err.message);
+  });
+}, 840000);
+
+// Main route
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../build', 'index.html'));
 });
